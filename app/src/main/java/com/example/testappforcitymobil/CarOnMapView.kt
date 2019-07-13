@@ -1,5 +1,8 @@
 package com.example.testappforcitymobil
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -8,6 +11,7 @@ import android.graphics.Paint.ANTI_ALIAS_FLAG
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import kotlin.math.max
 
 class CarOnMapView @JvmOverloads constructor(
@@ -18,6 +22,13 @@ class CarOnMapView @JvmOverloads constructor(
 
     var mWidth: Float = 100F
     var mHeight: Float = 100F
+
+    var oldCarX: Float = 0F
+    var oldCarY: Float = 0F
+
+    var aimCarX: Float = 0F
+    var aimCarY: Float = 0F
+
     var currCarX: Float = 0F
     var currCarY: Float = 0F
 
@@ -40,17 +51,36 @@ class CarOnMapView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         mWidth = w.toFloat()
         mHeight = h.toFloat()
-        currCarX = mWidth/2
-        currCarY = mHeight/2
+        oldCarX = mWidth/2
+        oldCarY = mHeight/2
+        currCarX = oldCarX
+        currCarY = oldCarY
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        event?.let {
-            currCarX = it.x
-            currCarY = it.y
+    val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = 1000
+        interpolator = AccelerateDecelerateInterpolator()
+
+        addUpdateListener {
+            currCarX = oldCarX + (aimCarX - oldCarX)*(it.animatedValue as Float)
+            currCarY = oldCarY + (aimCarY - oldCarY)*(it.animatedValue as Float)
             invalidate()
         }
 
+        addListener(object: AnimatorListenerAdapter(){
+            override fun onAnimationEnd(animation: Animator?) {
+                oldCarX = currCarX
+                oldCarY = currCarY
+            }
+        })
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action == MotionEvent.ACTION_UP && !animator.isRunning){
+            aimCarX = event.x
+            aimCarY = event.y
+            animator.start()
+        }
         return true
     }
 
