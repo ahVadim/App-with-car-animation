@@ -153,7 +153,6 @@ class CarOnMapView @JvmOverloads constructor(
                     aimCarY = event.y
                     calculatePath()
                     invalidate()
-                    return true
                 }
             }
 
@@ -164,12 +163,11 @@ class CarOnMapView @JvmOverloads constructor(
                     animator.duration = ((wayPathLength / mHeight) * carSpeedType * 1000).toLong()
                     animator.start()
                 }
-                return true
             }
 
         }
 
-        return false
+        return true
     }
 
     private val animator = ValueAnimator.ofFloat(0f, 1f).apply {
