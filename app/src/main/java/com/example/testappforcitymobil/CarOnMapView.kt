@@ -97,14 +97,17 @@ class CarOnMapView @JvmOverloads constructor(
         if (event?.action == MotionEvent.ACTION_UP && !animator.isRunning){
             aimCarX = event.x
             aimCarY = event.y
-            calculatePath()
-            animator.start()
+            if (calculatePath()) animator.start()
         }
         return true
     }
 
     override fun onDraw(canvas: Canvas?) {
-        canvas?.drawCircle(currCarX, currCarY, 20F, bluePaint)
+        canvas?.save()
+        canvas?.rotate(currCarAngle, currCarX, currCarY)
+        canvas?.drawRect(currCarX-20f, currCarY-10f, currCarX+20f, currCarY+10f, bluePaint)
+        canvas?.drawCircle(currCarX+20f, currCarY, 5F, strokePaint)
+        canvas?.restore()
         canvas?.drawPath(wayPath, strokePaint)
     }
 
@@ -116,7 +119,7 @@ class CarOnMapView @JvmOverloads constructor(
         return Math.toDegrees(this.toDouble()).toFloat()
     }
 
-    fun calculatePath(){
+    fun calculatePath(): Boolean{
 
         val circleSign = sign(aimCarY - oldCarY - tan(currCarAngle.toRadians())*(aimCarX - oldCarX))*
                 sign(cos(currCarAngle.toRadians()))
@@ -130,7 +133,7 @@ class CarOnMapView @JvmOverloads constructor(
 
         if (c < radius) {
             wayPath.reset()
-            return
+            return false
         }
 
         val b = sqrt(c.pow(2) - radius.pow(2))
@@ -148,6 +151,7 @@ class CarOnMapView @JvmOverloads constructor(
         wayPath.lineTo(aimCarX, aimCarY)
         wayPathMeas = PathMeasure(wayPath, false)
         wayPathLength = wayPathMeas.length
+        return true
     }
 
 }
