@@ -13,6 +13,7 @@
             app:carImage="@drawable/car_image"
             app:turningRadius="50dp"
             app:carWidth="50dp"
+            app:carSpeed="normal"
             app:showHintLine="false"/>
 
 </FrameLayout>

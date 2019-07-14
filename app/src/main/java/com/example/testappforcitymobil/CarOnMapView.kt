@@ -50,6 +50,8 @@ class CarOnMapView @JvmOverloads constructor(
 
     var radius: Float = 100F
 
+    private var carSpeedType: Int = 2
+
 
     init {
         context.theme.obtainStyledAttributes(attrs, R.styleable.CarOnMapView, 0, 0).apply {
@@ -61,6 +63,7 @@ class CarOnMapView @JvmOverloads constructor(
                     isCarWidthSetup = true
                 }
                 radius = getDimension(R.styleable.CarOnMapView_turningRadius, 100f)
+                carSpeedType = getInteger(R.styleable.CarOnMapView_carSpeed, 2)
             } finally {
                 recycle()
             }
@@ -87,12 +90,12 @@ class CarOnMapView @JvmOverloads constructor(
     private val pos = FloatArray(2)
     private val tg = FloatArray(2)
 
-    val bluePaint = Paint().apply {
+    private val bluePaint = Paint().apply {
         color = Color.BLUE
         isAntiAlias = true
     }
 
-    val strokePaint = Paint().apply {
+    private val strokePaint = Paint().apply {
         color = Color.RED
         style = Paint.Style.STROKE
         strokeWidth = 5F
@@ -120,38 +123,6 @@ class CarOnMapView @JvmOverloads constructor(
         currCarY = oldCarY
     }
 
-    val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-        duration = 2000
-        interpolator = AccelerateDecelerateInterpolator()
-
-        addUpdateListener {
-
-            if (wayPathMeas.getPosTan(wayPathLength * (it.animatedValue as Float), pos, tg)) {
-                currCarX = pos[0]
-                currCarY = pos[1]
-                currCarAngle = atan2(tg[1], tg[0]).toDegrees()
-                invalidate()
-            }
-
-        }
-
-        addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator?) {
-                oldCarX = currCarX
-                oldCarY = currCarY
-            }
-        })
-    }
-
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event?.action == MotionEvent.ACTION_UP && !animator.isRunning) {
-            aimCarX = event.x
-            aimCarY = event.y
-            if (calculatePath()) animator.start()
-        }
-        return true
-    }
-
     override fun onDraw(canvas: Canvas?) {
         canvas?.let {
             it.save()
@@ -169,6 +140,40 @@ class CarOnMapView @JvmOverloads constructor(
         }
     }
 
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action == MotionEvent.ACTION_UP && !animator.isRunning) {
+            aimCarX = event.x
+            aimCarY = event.y
+            if (calculatePath()) {
+                animator.duration = ((wayPathLength/mHeight)*carSpeedType*1000).toLong()
+                animator.start()
+            }
+        }
+        return true
+    }
+
+    private val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = 2000
+        interpolator = AccelerateDecelerateInterpolator()
+
+        addUpdateListener {
+
+            if (wayPathMeas.getPosTan(wayPathLength * (it.animatedValue as Float), pos, tg)) {
+                currCarX = pos[0]
+                currCarY = pos[1]
+                currCarAngle = atan2(tg[1], tg[0]).toDegrees()
+                invalidate()
+            }
+        }
+
+        addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator?) {
+                oldCarX = currCarX
+                oldCarY = currCarY
+            }
+        })
+    }
+
     private fun getCarRect(centerX: Float, centerY: Float): Rect {
         return RectF(
             centerX - carWidth / 2,
@@ -176,14 +181,6 @@ class CarOnMapView @JvmOverloads constructor(
             centerX + carWidth / 2,
             centerY + carHeight / 2
         ).toRect()
-    }
-
-    fun Float.toRadians(): Float {
-        return Math.toRadians(this.toDouble()).toFloat()
-    }
-
-    fun Float.toDegrees(): Float {
-        return Math.toDegrees(this.toDouble()).toFloat()
     }
 
     fun calculatePath(): Boolean {
@@ -219,6 +216,14 @@ class CarOnMapView @JvmOverloads constructor(
         wayPathMeas = PathMeasure(wayPath, false)
         wayPathLength = wayPathMeas.length
         return true
+    }
+
+    fun Float.toRadians(): Float {
+        return Math.toRadians(this.toDouble()).toFloat()
+    }
+
+    fun Float.toDegrees(): Float {
+        return Math.toDegrees(this.toDouble()).toFloat()
     }
 
 }
