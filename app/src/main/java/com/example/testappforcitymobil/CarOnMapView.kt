@@ -10,10 +10,11 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.ImageView
-import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.toRect
 import kotlin.math.*
+import android.graphics.DashPathEffect
+
+
 
 class CarOnMapView @JvmOverloads constructor(
     context: Context,
@@ -95,11 +96,12 @@ class CarOnMapView @JvmOverloads constructor(
         isAntiAlias = true
     }
 
-    private val strokePaint = Paint().apply {
-        color = Color.RED
+    private val dashedPaint = Paint().apply {
+        color = Color.GRAY
         style = Paint.Style.STROKE
         strokeWidth = 5F
         isAntiAlias = true
+        pathEffect = DashPathEffect(floatArrayOf(10f, 20f), 0f)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -132,24 +134,42 @@ class CarOnMapView @JvmOverloads constructor(
                 carImage?.draw(it)
             } else {
                 it.drawRect(getCarRect(currCarX, currCarY), bluePaint)
-                it.drawCircle(currCarX + carWidth/2, currCarY, carHeight/2, bluePaint)
+                it.drawCircle(currCarX + carWidth / 2, currCarY, carHeight / 2, bluePaint)
             }
-
             it.restore()
-            it.drawPath(wayPath, strokePaint)
+            if (shouldShowHintLine) it.drawPath(wayPath, dashedPaint)
         }
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event?.action == MotionEvent.ACTION_UP && !animator.isRunning) {
-            aimCarX = event.x
-            aimCarY = event.y
-            if (calculatePath()) {
-                animator.duration = ((wayPathLength/mHeight)*carSpeedType*1000).toLong()
-                animator.start()
+
+        if (animator.isRunning) return false
+
+        when (event?.action) {
+
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                if (shouldShowHintLine) {
+                    aimCarX = event.x
+                    aimCarY = event.y
+                    calculatePath()
+                    invalidate()
+                    return true
+                }
             }
+
+            MotionEvent.ACTION_UP -> {
+                aimCarX = event.x
+                aimCarY = event.y
+                if (calculatePath()) {
+                    animator.duration = ((wayPathLength / mHeight) * carSpeedType * 1000).toLong()
+                    animator.start()
+                }
+                return true
+            }
+
         }
-        return true
+
+        return false
     }
 
     private val animator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -170,6 +190,7 @@ class CarOnMapView @JvmOverloads constructor(
             override fun onAnimationEnd(animation: Animator?) {
                 oldCarX = currCarX
                 oldCarY = currCarY
+                wayPath.reset()
             }
         })
     }
@@ -183,7 +204,7 @@ class CarOnMapView @JvmOverloads constructor(
         ).toRect()
     }
 
-    fun calculatePath(): Boolean {
+    private fun calculatePath(): Boolean {
 
         val circleSign = sign(aimCarY - oldCarY - tan(currCarAngle.toRadians()) * (aimCarX - oldCarX)) *
                 sign(cos(currCarAngle.toRadians()))
