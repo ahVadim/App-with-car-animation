@@ -9,6 +9,10 @@
 
     <com.example.testappforcitymobil.CarOnMapView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            app:carImage="@drawable/car_image"
+            app:turningRadius="50dp"
+            app:carWidth="50dp"
+            app:showHintLine="false"/>
 
 </FrameLayout>

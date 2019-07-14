@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CarOnMapView">
+        <attr name="showHintLine" format="boolean" />
+        <attr name="carImage" format="reference" />
+        <attr name="carWidth" format="dimension" />
+        <attr name="turningRadius" format="dimension" />
+    </declare-styleable>
+</resources>
